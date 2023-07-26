@@ -3,7 +3,10 @@ package service
 import (
 	"bytes"
 	"errors"
+	"os"
 	"os/exec"
+
+	"gopkg.in/yaml.v3"
 )
 
 var SERVICE_CAT Service = Service{
@@ -35,4 +38,20 @@ func (s Service) Run(inputFile string) ([]byte, error) {
 		return []byte{}, err
 	}
 	return outb.Bytes(), nil
+}
+
+func LoadServices(configFile string) ([]Service, error) {
+	var services []Service
+	if configFile == "" {
+		return services, errors.New("No config file")
+	}
+	data, err := os.ReadFile(configFile)
+	if err != nil {
+		return services, err
+	}
+	err = yaml.Unmarshal(data, &services)
+	if err != nil {
+		return services, err
+	}
+	return services, nil
 }

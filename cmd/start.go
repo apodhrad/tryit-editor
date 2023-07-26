@@ -9,14 +9,26 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var configFile string
+
 // startCmd represents the start command
 var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Start the \"Tryit\" editor",
 	Long:  "Start the \"Tryit\" editor",
-	Run: func(cmd *cobra.Command, args []string) {
-		ctx, _ := server.Start([]service.Service{service.SERVICE_CAT})
+	RunE: func(cmd *cobra.Command, args []string) error {
+		services, err := service.LoadServices(configFile)
+		if err != nil {
+			return err
+		}
+
+		ctx, err := server.Start(services)
+		if err != nil {
+			return err
+		}
+
 		<-ctx.Done()
+		return nil
 	},
 }
 
@@ -32,4 +44,5 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// startCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	startCmd.Flags().StringVarP(&configFile, "config", "c", "", "configuration file")
 }
