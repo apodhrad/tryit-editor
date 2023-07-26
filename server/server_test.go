@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/apodhrad/tryit-editor/service"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -40,6 +41,19 @@ func assertRequest(t *testing.T, addr string, path string, expected string) {
 	assert.Equal(t, expected, string(actual))
 }
 
+func assertResponseContain(t *testing.T, addr string, path string, expected string) {
+	url := "http://" + addr + path
+	resp, err := http.Get(url)
+	assert.Nil(t, err)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
+
+	actual, err := io.ReadAll(resp.Body)
+	assert.Nil(t, err)
+	assert.Contains(t, string(actual), expected)
+}
+
 func assertStatus(t *testing.T, addr string, path string, expectedStatus string) {
 	url := "http://" + addr + path
 	resp, err := http.Get(url)
@@ -52,7 +66,8 @@ func assertStatus(t *testing.T, addr string, path string, expectedStatus string)
 }
 
 func TestServer(t *testing.T) {
-	ctx, err := Start()
+	svc := service.SERVICE_CAT
+	ctx, err := Start([]service.Service{svc})
 	assert.Nil(t, err)
 	assert.NotNil(t, ctx)
 
@@ -63,6 +78,8 @@ func TestServer(t *testing.T) {
 
 	assertStatus(t, "localhost:8080", "/test/test.txt", STATUS_200_OK)
 	assertRequest(t, "localhost:8080", "/test/test.txt", "Hello World")
+
+	assertResponseContain(t, "localhost:8080", "/index.html", "<option>"+svc.Name()+"</option>")
 
 	err = Stop()
 	assert.Nil(t, err)

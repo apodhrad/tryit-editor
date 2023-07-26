@@ -1,14 +1,20 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"embed"
+	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/apodhrad/tryit-editor/service"
 	"github.com/gorilla/mux"
 )
 
@@ -40,51 +46,150 @@ func contentType(path string) string {
 	}
 }
 
-func htmlHandler(fsys fs.FS, path string) (string, func(w http.ResponseWriter, r *http.Request)) {
-	handler := func(w http.ResponseWriter, r *http.Request) {
-		data, err := fs.ReadFile(fsys, path)
-		if err != nil {
-			fmt.Println("[ERROR] " + err.Error())
+func htmlHandleFunc(path string) func(w http.ResponseWriter, r *http.Request) {
+	handleFunc := func(w http.ResponseWriter, r *http.Request) {
+		data, ok := htmlContent[path]
+		if !ok {
+			msg := fmt.Sprintf("File '%v' not found", path)
+			fmt.Println("[ERROR] " + msg)
 			w.Header().Set("Content-Type", CONTENT_TYPE_TEXT)
 			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte(err.Error()))
+			w.Write([]byte(msg))
 		} else {
 			w.Header().Set("Content-Type", contentType(path))
 			w.WriteHeader(http.StatusOK)
 			w.Write(data)
 		}
 	}
-	pattern := path[len("html"):]
-	return pattern, handler
+	return handleFunc
 }
 
-var server *http.Server
-var ctx context.Context
-var cancel context.CancelFunc
+func serviceHandler(svc service.Service) (string, func(w http.ResponseWriter, r *http.Request)) {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
 
-func Start() (context.Context, error) {
-	r := mux.NewRouter()
+		data, err := io.ReadAll(r.Body)
+		if err != nil {
+			fmt.Println("[ERROR] " + err.Error())
+			w.Header().Set("Content-Type", CONTENT_TYPE_TEXT)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
 
-	err := fs.WalkDir(htmlFS, ".", func(path string, d fs.DirEntry, err error) error {
+		inputFile, err := os.CreateTemp("", svc.Name()+"-*-input")
+		if err != nil {
+			fmt.Println("[ERROR] " + err.Error())
+			w.Header().Set("Content-Type", CONTENT_TYPE_TEXT)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		_, err = inputFile.Write(data)
+		if err != nil {
+			fmt.Println("[ERROR] " + err.Error())
+			w.Header().Set("Content-Type", CONTENT_TYPE_TEXT)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		out, err := svc.Run(inputFile.Name())
+		if err != nil {
+			fmt.Println("[ERROR] " + err.Error())
+			w.Header().Set("Content-Type", CONTENT_TYPE_TEXT)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		outputFile := strings.ReplaceAll(inputFile.Name(), "input", "output")
+		err = os.WriteFile(outputFile, out, 0644)
+		if err != nil {
+			fmt.Println("[ERROR] " + err.Error())
+			w.Header().Set("Content-Type", CONTENT_TYPE_TEXT)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(err.Error()))
+			return
+		}
+
+		w.Header().Set("Content-Type", CONTENT_TYPE_TEXT)
+		w.WriteHeader(http.StatusOK)
+		w.Write(out)
+	}
+	return "/service/" + svc.Name(), handler
+}
+
+var htmlContent map[string][]byte
+
+func registerHtml(r *mux.Router, fsys fs.FS) error {
+	htmlContent = make(map[string][]byte)
+
+	err := fs.WalkDir(fsys, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 		if d.IsDir() {
 			return nil
 		}
-		pattern, handleFunc := htmlHandler(htmlFS, path)
-		r.HandleFunc(pattern, handleFunc)
-		if pattern == "/index.html" {
+		data, err := fs.ReadFile(fsys, path)
+		if err != nil {
+			return err
+		}
+		path = path[len("html"):]
+		htmlContent[path] = data
+		handleFunc := htmlHandleFunc(path)
+		r.HandleFunc(path, handleFunc)
+		if path == "/index.html" {
 			r.HandleFunc("/", handleFunc)
 		}
 		return nil
 	})
 
+	return err
+}
+
+func registerService(r *mux.Router, svc service.Service) error {
+	pattern, handleFunc := serviceHandler(svc)
+	r.HandleFunc(pattern, handleFunc)
+	return nil
+}
+
+func registerServices(r *mux.Router, svcs []service.Service) error {
+	if len(svcs) == 0 {
+		return errors.New("At least one service is required!")
+	}
+	svcOptions := ""
+	for _, svc := range svcs {
+		err := registerService(r, svc)
+		if err != nil {
+			return err
+		}
+		svcOptions += fmt.Sprintf("<option>%v</option>", svc.Name())
+	}
+	indexData := htmlContent["/index.html"]
+	indexData = bytes.ReplaceAll(indexData, []byte("${SERVICE_OPTIONS}"), []byte(svcOptions))
+	htmlContent["/index.html"] = indexData
+	return nil
+}
+
+var server *http.Server
+var ctx context.Context
+var cancel context.CancelFunc
+
+func Start(svcs []service.Service) (context.Context, error) {
+	r := mux.NewRouter()
+
+	err := registerHtml(r, htmlFS)
 	if err != nil {
 		return ctx, err
 	}
 
-	http.Handle("/", r)
+	err = registerServices(r, svcs)
+	if err != nil {
+		return ctx, err
+	}
 
 	ctx, cancel = context.WithCancel(context.Background())
 	server = &http.Server{
@@ -96,7 +201,6 @@ func Start() (context.Context, error) {
 	}
 
 	go func() {
-		// err := http.ListenAndServe(fmt.Sprintf(":%d", DEFAULT_PORT), nil)
 		err = server.ListenAndServe()
 		if err != nil {
 			fmt.Println("[ERROR] " + err.Error())

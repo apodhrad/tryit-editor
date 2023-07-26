@@ -225,6 +225,7 @@
 
 <ul class="w3-light-grey">
 	<li><button class="w3-button w3-bar-item w3-green w3-hover-white w3-hover-text-green tit-icon-arrows-cw" onclick="restack()" title="Change Orientation" ></button></li>
+	<li><select class="w3-bar-item w3-select" style="padding-right:20px;" id="service">${SERVICE_OPTIONS}</select></li>
 	<li><button class="w3-button w3-green w3-hover-white w3-hover-text-green" onclick="loadExample()" title="Reload example">Restore</button></li>
 	<li><button class="w3-button w3-bar-item w3-green w3-hover-white w3-hover-text-green" onclick="submitTryit(1)" title="Show HTML output">Run &raquo;</button></li>
 	<li style="float: right"><span class="w3-right w3-bar-item" style="padding: 9px 0;display: block;" id="framesize"></span></li>
@@ -252,18 +253,31 @@
 		if (window.editor) {
 			window.editor.save();
 		}
-		var text = $Id("textareaCode").value;
+		var input = $Id("textareaCode").value;
 		if (window.editor) {
-			var text = window.editor.getDoc().getValue("\n");
+			var input = window.editor.getDoc().getValue("\n");
 		}
-		text = text.replace(/\n\n\n/g,"\n\n"); // normalize newlines (??!!)
-		var ifr = $Id("iframeResult");
+		var options = {
+			method: "POST",
+			headers: {
+				"Content-Type": "text/plain"
+			},
+			body: input
+		}
+		var svc = $Id("service").value
+		fetch("/service/"+svc, options)
+			.then(response => response.text())
+			.then(text => updateResultFrame(text));
+	}
 
+	function updateResultFrame(text) {
+		var ifr = $Id("iframeResult");
 		var ifrw = (ifr.contentWindow) ? ifr.contentWindow : (ifr.contentDocument.document) ? ifr.contentDocument.document : ifr.contentDocument;
 		ifrw.document.open();
-		ifrw.document.write(text);  
+		ifrw.document.write(text);
 		ifrw.document.close();
 	}
+
 	function reEdited() {
 		var text = frameHTML();
 		$Id("textareaCode").value = text;

@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"github.com/apodhrad/tryit-editor/server"
+	"github.com/apodhrad/tryit-editor/service"
 	"github.com/spf13/cobra"
 )
 
@@ -14,7 +15,7 @@ var startCmd = &cobra.Command{
 	Short: "Start the \"Tryit\" editor",
 	Long:  "Start the \"Tryit\" editor",
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx, _ := server.Start()
+		ctx, _ := server.Start([]service.Service{service.SERVICE_CAT})
 		<-ctx.Done()
 	},
 }
