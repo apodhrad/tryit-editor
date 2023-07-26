@@ -14,7 +14,8 @@ var startCmd = &cobra.Command{
 	Short: "Start the \"Tryit\" editor",
 	Long:  "Start the \"Tryit\" editor",
 	Run: func(cmd *cobra.Command, args []string) {
-		server.Start()
+		ctx, _ := server.Start()
+		<-ctx.Done()
 	},
 }
 

@@ -1,2 +1,5 @@
 # default binary
 tryit-editor
+
+# after make build
+target/

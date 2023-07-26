@@ -1,16 +1,18 @@
 package server
 
 import (
+	"context"
 	"embed"
 	"fmt"
 	"io/fs"
+	"net"
 	"net/http"
 	"path/filepath"
 
 	"github.com/gorilla/mux"
 )
 
-const DEFAULT_PORT int = 8080
+const DEFAULT_PORT string = "8080"
 
 const CONTENT_TYPE_CSS string = "text/css"
 const CONTENT_TYPE_TEXT string = "text/plain"
@@ -56,7 +58,11 @@ func htmlHandler(fsys fs.FS, path string) (string, func(w http.ResponseWriter, r
 	return pattern, handler
 }
 
-func Start() error {
+var server *http.Server
+var ctx context.Context
+var cancel context.CancelFunc
+
+func Start() (context.Context, error) {
 	r := mux.NewRouter()
 
 	err := fs.WalkDir(htmlFS, ".", func(path string, d fs.DirEntry, err error) error {
@@ -75,21 +81,37 @@ func Start() error {
 	})
 
 	if err != nil {
-		return err
+		return ctx, err
 	}
 
 	http.Handle("/", r)
 
-	done := make(chan bool)
+	ctx, cancel = context.WithCancel(context.Background())
+	server = &http.Server{
+		Addr:    ":" + DEFAULT_PORT,
+		Handler: r,
+		BaseContext: func(l net.Listener) context.Context {
+			return ctx
+		},
+	}
+
 	go func() {
-		err := http.ListenAndServe(fmt.Sprintf(":%d", DEFAULT_PORT), nil)
+		// err := http.ListenAndServe(fmt.Sprintf(":%d", DEFAULT_PORT), nil)
+		err = server.ListenAndServe()
 		if err != nil {
 			fmt.Println("[ERROR] " + err.Error())
 		}
-		done <- true
+		cancel()
 	}()
 
-	<-done
+	return ctx, nil
+}
 
+func Stop() error {
+	err := server.Shutdown(ctx)
+	if err != nil {
+		return err
+	}
+	<-ctx.Done()
 	return nil
 }
