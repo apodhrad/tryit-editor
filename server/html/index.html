@@ -225,6 +225,7 @@
 
 <ul class="w3-light-grey">
 	<li><button class="w3-button w3-bar-item w3-green w3-hover-white w3-hover-text-green tit-icon-arrows-cw" onclick="restack()" title="Change Orientation" ></button></li>
+	<li><button class="w3-button w3-green w3-hover-white w3-hover-text-green" onclick="loadExample()" title="Reload example">Restore</button></li>
 	<li><button class="w3-button w3-bar-item w3-green w3-hover-white w3-hover-text-green" onclick="submitTryit(1)" title="Show HTML output">Run &raquo;</button></li>
 	<li style="float: right"><span class="w3-right w3-bar-item" style="padding: 9px 0;display: block;" id="framesize"></span></li>
   </ul>
@@ -234,65 +235,7 @@
 <div id="container">
 
 	<div id="textareacontainer">
-		<textarea autocomplete="on" id="textareaCode" wrap="logical" spellcheck="false"><!DOCTYPE html>
-<html>
-<head>
-<title>Sort a HTML List Alphabetically</title>
-</head>
-<body>
-
-<h1>This is a heading</h1>
-<p>This is a paragraph. Click the button to sort the list alphabetically: </p>
-<button onclick="sortList()">Sort</button>
-
-<ul id="id01">
-	<li>Oslo</li>
-	<li>Stockholm</li>
-	<li>Helsinki</li>
-	<li>Berlin</li>
-	<li>Rome</li>
-	<li>Madrid</li>
-</ul>
-
-<script>
-function sortList() {
-	var list, i, switching, b, shouldSwitch;
-	list = document.getElementById("id01");
-	switching = true;
-	/*Make a loop that will continue until
-	no switching has been done: */
-	while (switching) {
-		//start by saying: no switching is done: 
-		switching = false;
-		b = list.getElementsByTagName("LI");
-		//Loop through all list-items: 
-		for (i = 0; i < (b.length - 1); i++) {
-			//start by saying there should be no switching: 
-			shouldSwitch = false;
-			/*check if the next item should
-			switch place with the current item: */
-			if (b[i].innerHTML.toLowerCase() > b[i + 1].innerHTML.toLowerCase()) {
-				/*if next item is alphabetically
-				lower than current item, mark as a switch
-				and break the loop: */
-				shouldSwitch= true;
-				break;
-			}
-		}
-		if (shouldSwitch) {
-			/*If a switch has been marked, make the switch
-			and mark the switch as done: */
-			b[i].parentNode.insertBefore(b[i + 1], b[i]);
-			switching = true;
-		}
-	}
-}
-</script>
-
-</body>
-</html>
-
-		</textarea>
+		<textarea autocomplete="on" id="textareaCode" wrap="logical" spellcheck="false"></textarea>
 	</div>
 	<div id="dragbar">  </div>
 	<div id="iframecontainer">
@@ -303,6 +246,7 @@ function sortList() {
 
 <script>
 	var framecontentedit = false;
+	loadExample();
 
 	function submitTryit(n) {
 		if (window.editor) {
@@ -466,6 +410,15 @@ function sortList() {
 		text = text.replace(/\n\n\n/g,"\n\n"); // normalize newlines (??!!)
 		ifrw.document.body.contentEditable = framecontentedit;
 		return text;
+	}
+	function loadExample() {
+		fetch('/examples/default.txt')
+			.then(response => response.text())
+			.then(text => setTextareaCode(text));
+	}
+	function setTextareaCode(text) {
+		$Id("textareaCode").value = text;
+		window.editor.getDoc().setValue(text);
 	}
 	function loadFile() {
 		var dir = "";//location.href.slice(0,location.href.lastIndexOf("/") + 1);
