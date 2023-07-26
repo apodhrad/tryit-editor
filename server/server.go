@@ -66,7 +66,11 @@ func Start() error {
 		if d.IsDir() {
 			return nil
 		}
-		r.HandleFunc(htmlHandler(htmlFS, path))
+		pattern, handleFunc := htmlHandler(htmlFS, path)
+		r.HandleFunc(pattern, handleFunc)
+		if pattern == "/index.html" {
+			r.HandleFunc("/", handleFunc)
+		}
 		return nil
 	})
 
