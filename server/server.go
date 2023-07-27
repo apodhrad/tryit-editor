@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -66,9 +67,29 @@ func htmlHandleFunc(path string) func(w http.ResponseWriter, r *http.Request) {
 	return handleFunc
 }
 
+func exampleHandleFunc(path string) func(w http.ResponseWriter, r *http.Request) {
+	handleFunc := func(w http.ResponseWriter, r *http.Request) {
+		log.Infof("Request %v %v", r.Method, r.RequestURI)
+		data, err := os.ReadFile(path)
+		if err != nil {
+			log.Errorf("Response '%d %v'", http.StatusNotFound, http.StatusText(http.StatusNotFound))
+			log.Error(err)
+			w.Header().Set("Content-Type", CONTENT_TYPE_TEXT)
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte(err.Error()))
+		} else {
+			w.Header().Set("Content-Type", contentType(path))
+			w.WriteHeader(http.StatusOK)
+			w.Write(data)
+			log.Infof("Response '%d %v'", http.StatusOK, http.StatusText(http.StatusOK))
+		}
+	}
+	return handleFunc
+}
+
 func serviceHandler(svc service.Service) (string, func(w http.ResponseWriter, r *http.Request)) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
-		log.Infof("%v %v", r.Method, r.RequestURI)
+		log.Infof("Request %v %v", r.Method, r.RequestURI)
 		defer r.Body.Close()
 
 		data, err := io.ReadAll(r.Body)
@@ -125,15 +146,15 @@ func serviceHandler(svc service.Service) (string, func(w http.ResponseWriter, r 
 		w.Header().Set("Content-Type", CONTENT_TYPE_TEXT)
 		w.WriteHeader(http.StatusOK)
 		w.Write(out)
+		log.Infof("Response '%d %v'", http.StatusOK, http.StatusText(http.StatusOK))
 	}
 	return "/service/" + svc.Name(), handler
 }
 
-var htmlContent map[string][]byte
+var htmlContent map[string][]byte = make(map[string][]byte)
+var optionMap map[string][]string = make(map[string][]string)
 
 func registerHtml(r *mux.Router, fsys fs.FS) error {
-	htmlContent = make(map[string][]byte)
-
 	err := fs.WalkDir(fsys, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -158,10 +179,55 @@ func registerHtml(r *mux.Router, fsys fs.FS) error {
 	return err
 }
 
+func registerExample(r *mux.Router, svc string, path string) error {
+	log.Infof("Register example '%v'", path)
+	handleFunc := exampleHandleFunc(path)
+	base := filepath.Base(path)
+	pattern := fmt.Sprintf("/service/%v/example/%v", svc, base)
+	r.HandleFunc(pattern, handleFunc)
+	log.Infof("Registered at '%v'", pattern)
+	optionMap[svc] = append(optionMap[svc], base)
+	return nil
+}
+
 func registerService(r *mux.Router, svc service.Service) error {
+	log.Infof("Register service '%v'", svc.Name())
 	pattern, handleFunc := serviceHandler(svc)
 	r.HandleFunc(pattern, handleFunc)
+	log.Infof("Registered at '%v'", pattern)
+	optionMap[svc.Name()] = []string{}
+	for _, example := range svc.Examples {
+		registerExample(r, svc.Name(), example)
+	}
 	return nil
+}
+
+func toJavaScriptMap(m map[string][]string) string {
+
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	options := ""
+	for i, key := range keys {
+		options += fmt.Sprintf("\"%v\":[", key)
+		if len(m[key]) == 0 {
+			options += `"--none--"`
+		}
+		for j, value := range m[key] {
+			options += fmt.Sprintf("\"%v\"", value)
+			if j < len(m[key])-1 {
+				options += ","
+			}
+		}
+		options += "]"
+		if i < len(keys)-1 {
+			options += ","
+		}
+	}
+	return fmt.Sprintf("const optionMap = {%v}", options)
 }
 
 func registerServices(r *mux.Router, svcs []service.Service) error {
@@ -169,16 +235,21 @@ func registerServices(r *mux.Router, svcs []service.Service) error {
 		return errors.New("At least one service is required!")
 	}
 	svcOptions := ""
+	exampleOptions := ""
 	for _, svc := range svcs {
-		log.Infof("Register service '%v'", svc.Name())
 		err := registerService(r, svc)
 		if err != nil {
 			return err
 		}
 		svcOptions += fmt.Sprintf("<option>%v</option>", svc.Name())
+		for _, examplePath := range svc.Examples {
+			exampleName := filepath.Base(examplePath)
+			exampleOptions += fmt.Sprintf("<option>%v</option>", exampleName)
+		}
 	}
 	indexData := htmlContent["/index.html"]
-	indexData = bytes.ReplaceAll(indexData, []byte("${SERVICE_OPTIONS}"), []byte(svcOptions))
+	origOptionMap := `const optionMap = {"--none--":["--none--"]}`
+	indexData = bytes.ReplaceAll(indexData, []byte(origOptionMap), []byte(toJavaScriptMap(optionMap)))
 	htmlContent["/index.html"] = indexData
 	return nil
 }

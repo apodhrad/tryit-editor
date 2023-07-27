@@ -79,8 +79,23 @@ func TestServer(t *testing.T) {
 	assertStatus(t, "localhost:8080", "/test/test.txt", STATUS_200_OK)
 	assertRequest(t, "localhost:8080", "/test/test.txt", "Hello World")
 
-	assertResponseContain(t, "localhost:8080", "/index.html", "<option>"+svc.Name()+"</option>")
+	assertResponseContain(t, "localhost:8080", "/index.html", `optionMap = {"cat":["default.txt"]}`)
 
 	err = Stop()
 	assert.Nil(t, err)
+}
+
+func TestToJavaScriptMap(t *testing.T) {
+	options := make(map[string][]string)
+	options["a"] = []string{"a1"}
+	options["b"] = []string{"b1", "b2"}
+	options["c"] = []string{"c1", "c2", "c3"}
+	actual := toJavaScriptMap(options)
+	expected := `const optionMap = {"a":["a1"],"b":["b1","b2"],"c":["c1","c2","c3"]}`
+	assert.Equal(t, expected, actual)
+
+	options["d"] = []string{}
+	actual = toJavaScriptMap(options)
+	expected = `const optionMap = {"a":["a1"],"b":["b1","b2"],"c":["c1","c2","c3"],"d":["--none--"]}`
+	assert.Equal(t, expected, actual)
 }
