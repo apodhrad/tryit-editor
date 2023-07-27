@@ -9,14 +9,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var SERVICE_CAT Service = Service{
-	Exec:     "cat",
-	Examples: []string{"examples/default.txt"},
-}
-
 type Service struct {
 	Exec     string
 	Examples []string
+	run      func(string) ([]byte, error)
 }
 
 func (s Service) Name() string {
@@ -24,6 +20,10 @@ func (s Service) Name() string {
 }
 
 func (s Service) Run(inputFile string) ([]byte, error) {
+	if s.run != nil {
+		return s.run(inputFile)
+	}
+
 	var outb, errb bytes.Buffer
 
 	cmd := exec.Command(s.Exec, inputFile)

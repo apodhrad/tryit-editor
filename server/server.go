@@ -70,6 +70,7 @@ func htmlHandleFunc(path string) func(w http.ResponseWriter, r *http.Request) {
 func exampleHandleFunc(path string) func(w http.ResponseWriter, r *http.Request) {
 	handleFunc := func(w http.ResponseWriter, r *http.Request) {
 		log.Infof("Request %v %v", r.Method, r.RequestURI)
+
 		data, err := os.ReadFile(path)
 		if err != nil {
 			log.Errorf("Response '%d %v'", http.StatusNotFound, http.StatusText(http.StatusNotFound))
@@ -181,10 +182,13 @@ func registerHtml(r *mux.Router, fsys fs.FS) error {
 
 func registerExample(r *mux.Router, svc string, path string) error {
 	log.Infof("Register example '%v'", path)
-	handleFunc := exampleHandleFunc(path)
 	base := filepath.Base(path)
 	pattern := fmt.Sprintf("/service/%v/example/%v", svc, base)
-	r.HandleFunc(pattern, handleFunc)
+	// built-in example are already registered under html
+	if !strings.Contains(path, "[built-in]") {
+		handleFunc := exampleHandleFunc(path)
+		r.HandleFunc(pattern, handleFunc)
+	}
 	log.Infof("Registered at '%v'", pattern)
 	optionMap[svc] = append(optionMap[svc], base)
 	return nil

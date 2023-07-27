@@ -17,9 +17,16 @@ var startCmd = &cobra.Command{
 	Short: "Start the Tryit Editor",
 	Long:  "Start the Tryit Editor",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		services, err := service.LoadServices(configFile)
-		if err != nil {
-			return err
+		var services []service.Service
+		var err error
+
+		if configFile == "" {
+			services = []service.Service{service.BUILTIN_SERVICE_HTML}
+		} else {
+			services, err = service.LoadServices(configFile)
+			if err != nil {
+				return err
+			}
 		}
 
 		ctx, err := server.Start(services)

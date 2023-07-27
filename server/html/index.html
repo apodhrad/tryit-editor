@@ -281,7 +281,6 @@
 
 	// initialize examples
 	optionMap[first.value].forEach(text => addOption(second, text));
-	loadExample();
 
 	function submitTryit(n) {
 		if (window.editor) {
@@ -534,6 +533,7 @@
 		reEdited();
 	}
 
+	loadExample();
 </script>
 <script src="js/FileSaver.js"></script>
 <script>
