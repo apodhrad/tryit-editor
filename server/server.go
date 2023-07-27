@@ -13,9 +13,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/apodhrad/tryit-editor/service"
 	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
 )
 
 const DEFAULT_PORT string = "8080"
@@ -51,7 +53,7 @@ func htmlHandleFunc(path string) func(w http.ResponseWriter, r *http.Request) {
 		data, ok := htmlContent[path]
 		if !ok {
 			msg := fmt.Sprintf("File '%v' not found", path)
-			fmt.Println("[ERROR] " + msg)
+			log.Error(msg)
 			w.Header().Set("Content-Type", CONTENT_TYPE_TEXT)
 			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte(msg))
@@ -66,53 +68,59 @@ func htmlHandleFunc(path string) func(w http.ResponseWriter, r *http.Request) {
 
 func serviceHandler(svc service.Service) (string, func(w http.ResponseWriter, r *http.Request)) {
 	handler := func(w http.ResponseWriter, r *http.Request) {
+		log.Infof("%v %v", r.Method, r.RequestURI)
 		defer r.Body.Close()
 
 		data, err := io.ReadAll(r.Body)
 		if err != nil {
-			fmt.Println("[ERROR] " + err.Error())
+			log.Error(err)
 			w.Header().Set("Content-Type", CONTENT_TYPE_TEXT)
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
 			return
 		}
 
+		log.Debugf("Input:\n%v", string(data))
 		inputFile, err := os.CreateTemp("", svc.Name()+"-*-input")
 		if err != nil {
-			fmt.Println("[ERROR] " + err.Error())
+			log.Error(err)
 			w.Header().Set("Content-Type", CONTENT_TYPE_TEXT)
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
 			return
 		}
+		log.Infof("Input file '%v'", inputFile.Name())
 
 		_, err = inputFile.Write(data)
 		if err != nil {
-			fmt.Println("[ERROR] " + err.Error())
+			log.Error(err)
 			w.Header().Set("Content-Type", CONTENT_TYPE_TEXT)
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
 			return
 		}
 
+		log.Infof("Run '%v %v'", svc.Name(), inputFile.Name())
 		out, err := svc.Run(inputFile.Name())
 		if err != nil {
-			fmt.Println("[ERROR] " + err.Error())
+			log.Error(err)
 			w.Header().Set("Content-Type", CONTENT_TYPE_TEXT)
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
 			return
 		}
 
+		log.Debugf("Output:\n%v", string(out))
 		outputFile := strings.ReplaceAll(inputFile.Name(), "input", "output")
 		err = os.WriteFile(outputFile, out, 0644)
 		if err != nil {
-			fmt.Println("[ERROR] " + err.Error())
+			log.Error(err)
 			w.Header().Set("Content-Type", CONTENT_TYPE_TEXT)
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
 			return
 		}
+		log.Infof("Output file '%v'", inputFile.Name())
 
 		w.Header().Set("Content-Type", CONTENT_TYPE_TEXT)
 		w.WriteHeader(http.StatusOK)
@@ -162,6 +170,7 @@ func registerServices(r *mux.Router, svcs []service.Service) error {
 	}
 	svcOptions := ""
 	for _, svc := range svcs {
+		log.Infof("Register service '%v'", svc.Name())
 		err := registerService(r, svc)
 		if err != nil {
 			return err
@@ -179,15 +188,20 @@ var ctx context.Context
 var cancel context.CancelFunc
 
 func Start(svcs []service.Service) (context.Context, error) {
+	fmt.Printf(FIGLET + "\n")
+
 	r := mux.NewRouter()
 
+	log.Info("Register html")
 	err := registerHtml(r, htmlFS)
 	if err != nil {
+		log.Error(err)
 		return ctx, err
 	}
 
 	err = registerServices(r, svcs)
 	if err != nil {
+		log.Error(err)
 		return ctx, err
 	}
 
@@ -200,14 +214,17 @@ func Start(svcs []service.Service) (context.Context, error) {
 		},
 	}
 
+	log.Info("Starting the server")
 	go func() {
 		err = server.ListenAndServe()
 		if err != nil {
-			fmt.Println("[ERROR] " + err.Error())
+			log.Error(err)
 		}
 		cancel()
 	}()
 
+	time.Sleep(time.Second)
+	log.Info("Server is up and running at http://localhost:8080")
 	return ctx, nil
 }
 
