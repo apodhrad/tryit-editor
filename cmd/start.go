@@ -14,8 +14,8 @@ var configFile string
 // startCmd represents the start command
 var startCmd = &cobra.Command{
 	Use:   "start",
-	Short: "Start the \"Tryit\" editor",
-	Long:  "Start the \"Tryit\" editor",
+	Short: "Start the Tryit Editor",
+	Long:  "Start the Tryit Editor",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		services, err := service.LoadServices(configFile)
 		if err != nil {
@@ -44,5 +44,5 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// startCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	startCmd.Flags().StringVarP(&configFile, "config", "c", "", "configuration file")
+	startCmd.Flags().StringVarP(&configFile, "config", "c", "", "yaml file with services")
 }

@@ -3,7 +3,7 @@
 <html lang="en-US">
 <head>
 	<meta http-equiv="content-type" content="text/html; charset=windows-1252">
-	<title>Tryit Editor v3.7 luce80</title>
+	<title>Tryit Editor</title>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<link rel="stylesheet" href="css/w3.css">
 	<link rel="stylesheet" href="css/codemirror.css">
@@ -224,10 +224,10 @@
 
 
 <ul class="w3-light-grey">
-	<li><button class="w3-button w3-bar-item w3-green w3-hover-white w3-hover-text-green tit-icon-arrows-cw" onclick="restack()" title="Change Orientation" ></button></li>
-	<li><select class="w3-bar-item w3-select" style="padding-right:20px;" id="service">${SERVICE_OPTIONS}</select></li>
+	<li><button class="w3-button w3-bar-item w3-green w3-hover-white w3-hover-text-green tit-icon-arrows-cw" onclick="restack()" title="Change orientation" ></button></li>
+	<li><select class="w3-bar-item w3-select" style="padding-right:20px;" id="service" title="Select a service">${SERVICE_OPTIONS}</select></li>
 	<li><button class="w3-button w3-green w3-hover-white w3-hover-text-green" onclick="loadExample()" title="Reload example">Restore</button></li>
-	<li><button class="w3-button w3-bar-item w3-green w3-hover-white w3-hover-text-green" onclick="submitTryit(1)" title="Show HTML output">Run &raquo;</button></li>
+	<li><button class="w3-button w3-bar-item w3-green w3-hover-white w3-hover-text-green" onclick="submitTryit(1)" title="Run the selected service">Run</button></li>
 	<li style="float: right"><span class="w3-right w3-bar-item" style="padding: 9px 0;display: block;" id="framesize"></span></li>
   </ul>
   
