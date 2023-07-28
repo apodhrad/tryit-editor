@@ -3,6 +3,7 @@ module github.com/apodhrad/tryit-editor
 go 1.20
 
 require (
+	github.com/gomarkdown/markdown v0.0.0-20230716120725-531d2d74bc12
 	github.com/gorilla/mux v1.8.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.7.0

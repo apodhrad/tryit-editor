@@ -21,7 +21,7 @@ var startCmd = &cobra.Command{
 		var err error
 
 		if configFile == "" {
-			services = []service.Service{service.BUILTIN_SERVICE_HTML}
+			services = []service.Service{service.BUILTIN_SERVICE_HTML, service.BUILTIN_SERVICE_MARKDOWN}
 		} else {
 			services, err = service.LoadServices(configFile)
 			if err != nil {
