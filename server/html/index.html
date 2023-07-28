@@ -239,7 +239,7 @@
 <div id="container">
 
 	<div id="textareacontainer">
-		<textarea autocomplete="on" id="textareaCode" wrap="logical" spellcheck="false"></textarea>
+		<textarea autocomplete="off" id="textareaCode" wrap="logical" spellcheck="false"></textarea>
 	</div>
 	<div id="dragbar">  </div>
 	<div id="iframecontainer">
@@ -429,16 +429,12 @@
 	*/
 	function colorcoding() {  
 		window.editor = CodeMirror.fromTextArea($Id("textareaCode"), {
-			mode: "text/html",
+			mode: "text/plain",
 			htmlMode: true,
 			lineWrapping: false,
 			smartIndent: true,
 			indentUnit: 4,
-			tabSize: 4,
-			indentWithTabs: true,
-			addModeClass: true,
-			autoCloseTags: true,
-			autoCloseBrackets: true
+			lineNumbers: true,
 		});
 		//window.editor.on("change", function () {window.editor.save();});
 		//window.editor.on("change", function () {submitTryit(1)}); better avoid this due to "conflict" with contentEditable
