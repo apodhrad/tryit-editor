@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -36,7 +35,7 @@ func setLogLevel(logLevel string) {
 func setFormatter() {
 	logrus.SetFormatter(&myFormatter{logrus.TextFormatter{
 		FullTimestamp:          true,
-		TimestampFormat:        time.DateTime,
+		TimestampFormat:        "2006-01-02 15:04:05",
 		ForceColors:            true,
 		DisableLevelTruncation: true,
 	}})
