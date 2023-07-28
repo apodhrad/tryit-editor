@@ -53,5 +53,13 @@ func LoadServices(configFile string) ([]Service, error) {
 	if err != nil {
 		return services, err
 	}
+	// Looad run functions for builtin services
+	for i := range services {
+		for _, builtin_svc := range BUILTIN_SERVICES {
+			if services[i].Name() == builtin_svc.Name() {
+				services[i].run = builtin_svc.run
+			}
+		}
+	}
 	return services, nil
 }

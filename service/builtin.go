@@ -13,6 +13,8 @@ var SERVICE_CAT Service = Service{
 	Examples: []string{"examples/default.txt"},
 }
 
+var BUILTIN_SERVICES []Service = []Service{BUILTIN_SERVICE_HTML, BUILTIN_SERVICE_MARKDOWN}
+
 var BUILTIN_SERVICE_HTML Service = Service{
 	Exec:     "html [built-in]",
 	Examples: []string{"service/html [built-in]/example/items.html"},
