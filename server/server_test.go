@@ -66,7 +66,7 @@ func assertStatus(t *testing.T, addr string, path string, expectedStatus string)
 }
 
 func TestServer(t *testing.T) {
-	svc := service.SERVICE_CAT
+	svc := service.BUILTIN_SERVICE_HTML
 	ctx, err := Start([]service.Service{svc})
 	assert.Nil(t, err)
 	assert.NotNil(t, ctx)
@@ -79,7 +79,7 @@ func TestServer(t *testing.T) {
 	assertStatus(t, "localhost:8080", "/test/test.txt", STATUS_200_OK)
 	assertRequest(t, "localhost:8080", "/test/test.txt", "Hello World")
 
-	assertResponseContain(t, "localhost:8080", "/index.html", `optionMap = {"cat":["default.txt"]}`)
+	assertResponseContain(t, "localhost:8080", "/index.html", `optionMap = {"html [built-in]":["items.html"]}`)
 
 	err = Stop()
 	assert.Nil(t, err)

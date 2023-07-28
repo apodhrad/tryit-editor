@@ -21,8 +21,8 @@ func tmpFile(t *testing.T, content string) string {
 func TestService(t *testing.T) {
 	tmpFile := tmpFile(t, "Hello Test")
 
-	svc := SERVICE_CAT
-	assert.Equal(t, "cat", svc.Name())
+	svc := BUILTIN_SERVICE_HTML
+	assert.Equal(t, "html [built-in]", svc.Name())
 	out, err := svc.Run(tmpFile)
 	assert.Nil(t, err)
 	assert.Equal(t, "Hello Test", string(out))

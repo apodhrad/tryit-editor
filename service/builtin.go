@@ -8,11 +8,6 @@ import (
 	"github.com/gomarkdown/markdown/parser"
 )
 
-var SERVICE_CAT Service = Service{
-	Exec:     "cat",
-	Examples: []string{"examples/default.txt"},
-}
-
 var BUILTIN_SERVICES []Service = []Service{BUILTIN_SERVICE_HTML, BUILTIN_SERVICE_MARKDOWN}
 
 var BUILTIN_SERVICE_HTML Service = Service{
