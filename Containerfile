@@ -29,6 +29,8 @@ COPY --from=builder /tmp/tryit-editor/target/tryit-editor /usr/local/bin/
 
 RUN useradd -M tryit-editor
 
+USER tryit-editor
+
 EXPOSE 8080
 
 ENTRYPOINT ["tryit-editor"]
