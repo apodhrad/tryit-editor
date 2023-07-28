@@ -1,0 +1,57 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tryit-editor
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: cool
+  name: cool
+  namespace: tryit-editor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cool
+  template:
+    metadata:
+      labels:
+        app: cool
+    spec:
+      containers:
+      - image: quay.io/apodhrad/tryit-editor:latest
+        name: tryit-editor
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: cool
+  name: cool
+  namespace: tryit-editor
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: cool
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  labels:
+    app: cool
+  name: cool
+  namespace: tryit-editor
+spec:
+  port:
+    targetPort: 8080
+  to:
+    kind: ""
+    name: cool

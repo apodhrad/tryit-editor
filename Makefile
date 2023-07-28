@@ -29,3 +29,8 @@ image-run:
 image-push:
 	@podman tag $(IMAGE) $(REPO)/$(IMAGE)
 	@podman push $(REPO)/$(IMAGE)
+
+openshift-deploy:
+	@oc apply -f openshift-deployment.yaml
+	@oc get route cool -n tryit-editor -o=jsonpath='{.spec.host}'
+	@echo ""
