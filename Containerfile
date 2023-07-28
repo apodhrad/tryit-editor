@@ -32,3 +32,5 @@ RUN useradd -M tryit-editor
 EXPOSE 8080
 
 ENTRYPOINT ["tryit-editor"]
+
+CMD ["start"]

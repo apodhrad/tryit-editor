@@ -24,7 +24,7 @@ image-build:
 	@podman build --layers=true -t $(IMAGE) .
 
 image-run:
-	@podman run -it --rm -p 8080:8080 $(IMAGE) start
+	@podman run -it --rm -p 8080:8080 $(IMAGE)
 
 image-push:
 	@podman tag $(IMAGE) $(REPO)/$(IMAGE)
