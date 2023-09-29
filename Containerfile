@@ -20,10 +20,7 @@ RUN cd /tmp/tryit-editor && make build
 # | |  | | (_| | | | | |
 # |_|  |_|\__,_|_|_| |_|
 #
-FROM registry.access.redhat.com/ubi9/ubi-minimal:9.2
-
-RUN microdnf install --nodocs -y shadow-utils &&\
-    microdnf clean all
+FROM registry.access.redhat.com/ubi9/ubi-micro:9.2
 
 COPY --from=builder /tmp/tryit-editor/target/tryit-editor /usr/local/bin/
 
@@ -31,11 +28,9 @@ VOLUME /var/tryit-editor
 
 ENV PATH "/var/tryit-editor/bin:$PATH"
 
-RUN useradd -M tryit-editor
-
-USER tryit-editor
-
 EXPOSE 8080
+
+USER 1001
 
 ENTRYPOINT ["tryit-editor"]
 
