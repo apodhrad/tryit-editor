@@ -27,6 +27,10 @@ RUN microdnf install --nodocs -y shadow-utils &&\
 
 COPY --from=builder /tmp/tryit-editor/target/tryit-editor /usr/local/bin/
 
+VOLUME /var/tryit-editor
+
+ENV PATH "/var/tryit-editor/bin:$PATH"
+
 RUN useradd -M tryit-editor
 
 USER tryit-editor

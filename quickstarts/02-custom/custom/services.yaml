@@ -1,0 +1,9 @@
+- exec: html [built-in]
+  examples:
+    - /var/tryit-editor/examples/html-example.txt
+- exec: markdown [built-in]
+  examples:
+    - /var/tryit-editor/examples/markdown-example.txt
+- exec: custom-tool.sh
+  examples:
+    - /var/tryit-editor/examples/custom-example.txt
